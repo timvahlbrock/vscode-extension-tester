@@ -1,12 +1,12 @@
 'use strict';
 
+import * as child_process from 'child_process';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as child_process from 'child_process';
-import { VSRunner } from "../suite/runner";
-import { Unpack } from "./unpack";
 import { logging } from "selenium-webdriver";
+import { VSRunner } from "../suite/runner";
 import { Download } from './download';
+import { Unpack } from "./unpack";
 
 export enum ReleaseQuality {
     Stable = 'stable',
@@ -26,6 +26,8 @@ export interface RunOptions {
     logLevel?: logging.Level;
     /** try to perform all setup without internet connection, needs all requirements pre-downloaded manually */
     offline?: boolean;
+    /** path to unbundled extension sources */
+    extensionDevelopmentPath?: string;
 }
 
 /** defaults for the [[RunOptions]] */
@@ -50,17 +52,19 @@ export class CodeUtil {
     private cliEnv!: string;
     private availableVersions: string[];
     private extensionsFolder: string | undefined;
+    private extensionDevelopmentPath: string | undefined;
 
     /**
-     * Create an instance of code handler 
+     * Create an instance of code handler
      * @param folder Path to folder where all the artifacts will be stored.
      * @param extensionsFolder Path to use as extensions directory by VSCode
      */
-    constructor(folder: string = 'test-resources', type: ReleaseQuality = ReleaseQuality.Stable, extensionsFolder?: string) {
+    constructor(folder: string = 'test-resources', type: ReleaseQuality = ReleaseQuality.Stable, extensionsFolder?: string, extensionDevelopmentPath?: string) {
         this.availableVersions = [];
         this.downloadPlatform = this.getPlatform();
         this.downloadFolder = path.resolve(folder);
         this.extensionsFolder = extensionsFolder ? path.resolve(extensionsFolder) : undefined;
+        this.extensionDevelopmentPath =  extensionDevelopmentPath ? path.resolve(extensionDevelopmentPath) : undefined;
         this.releaseType = type;
 
         if (type === ReleaseQuality.Stable) {
@@ -84,7 +88,7 @@ export class CodeUtil {
 
     /**
      * Download and unpack VS Code for testing purposes
-     * 
+     *
      * @param version VS Code version to get, default latest
      */
     async downloadVSCode(version: string = 'latest'): Promise<void> {
@@ -97,11 +101,11 @@ export class CodeUtil {
             const url = ['https://update.code.visualstudio.com', version, this.downloadPlatform, this.releaseType].join('/');
             const isTarGz = this.downloadPlatform.indexOf('linux') > -1;
             const fileName = `${path.basename(url)}.${isTarGz ? 'tar.gz' : 'zip'}`;
-    
+
             console.log(`Downloading VS Code from: ${url}`);
             await Download.getFile(url, path.join(this.downloadFolder, fileName), true);
             console.log(`Downloaded VS Code into ${path.join(this.downloadFolder, fileName)}`);
-    
+
             console.log(`Unpacking VS Code into ${this.downloadFolder}`);
             const target = await fs.mkdtemp('vscode');
             await Unpack.unpack(path.join(this.downloadFolder, fileName), target);
@@ -239,6 +243,7 @@ export class CodeUtil {
         process.env = finalEnv;
         process.env.TEST_RESOURCES = this.downloadFolder;
         process.env.EXTENSIONS_FOLDER = this.extensionsFolder;
+        process.env.EXTENSION_DEV_PATH = this.extensionDevelopmentPath;
         const runner = new VSRunner(this.executablePath, literalVersion, this.parseSettings(runOptions.settings ?? DEFAULT_RUN_OPTIONS.settings), runOptions.cleanup, this.releaseType, runOptions.config);
         return runner.runTests(testFilesPattern, this, runOptions.logLevel);
     }
@@ -246,7 +251,7 @@ export class CodeUtil {
     /**
      * Finds the version of chromium used for given VS Code version.
      * Works only for versions 1.30+, older versions need to be checked manually
-     * 
+     *
      * @param codeVersion version of VS Code, default latest
      * @param quality release stream, default stable
      */

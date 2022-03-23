@@ -132,6 +132,7 @@
 		"lint": "tslint -p ./",
 		"watch": "tsc -watch -p ./",
 		"ui-test": "npm run compile && extest setup-and-run './out/src/test/**/customView*test.js' -i",
+		"ui-test-dev": "npm run compile && extest run-tests './out/src/test/**/customView*test.js' --extension_development_path=.",
 		"ci-test": "npm run compile && extest setup-and-run './out/src/test/**/*test.js' -u -s ~/test"
 	},
 	"devDependencies": {

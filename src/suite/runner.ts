@@ -1,15 +1,15 @@
 'use strict';
 
-import { VSBrowser } from '../browser';
 import * as fs from 'fs-extra';
-import Mocha = require('mocha');
 import * as glob from 'glob';
-import { CodeUtil, ReleaseQuality } from '../util/codeUtil';
-import * as path from 'path';
 import * as yaml from 'js-yaml';
-import sanitize = require('sanitize-filename');
-import { logging } from 'selenium-webdriver';
 import * as os from 'os';
+import * as path from 'path';
+import { logging } from 'selenium-webdriver';
+import { VSBrowser } from '../browser';
+import { CodeUtil, ReleaseQuality } from '../util/codeUtil';
+import Mocha = require('mocha');
+import sanitize = require('sanitize-filename');
 
 /**
  * Mocha runner wrapper
@@ -45,13 +45,13 @@ export class VSRunner {
             let browser: VSBrowser = new VSBrowser(this.codeVersion, this.releaseType, this.customSettings, logLevel);
             const universalPattern = testFilesPattern.replace(/'/g, '');
             const testFiles = glob.sync(universalPattern);
-    
+
             testFiles.forEach((file) => {
                 if (fs.existsSync(file) && file.substr(-3) === '.js') {
                     this.mocha.addFile(file);
                 }
             });
-    
+
             this.mocha.suite.afterEach(async function () {
                 if (this.currentTest && this.currentTest.state !== 'passed') {
                     try {
@@ -62,7 +62,7 @@ export class VSRunner {
                     }
                 }
             });
-    
+
             this.mocha.suite.beforeAll(async function () {
                 this.timeout(45000);
                 const start = Date.now();
@@ -73,7 +73,7 @@ export class VSRunner {
                 console.log(`Browser ready in ${Date.now() - start} ms`);
                 console.log('Launching tests...');
             });
-    
+
             this.mocha.suite.afterAll(async function() {
                 this.timeout(15000);
                 await browser.quit();
@@ -86,10 +86,10 @@ export class VSRunner {
                         }
                     }
                 }
-    
+
                 code.uninstallExtension(self.cleanup);
             });
-    
+
             this.mocha.run((failures) => {
                 process.exitCode = failures ? 1 : 0;
                 resolve(process.exitCode);
@@ -103,11 +103,11 @@ export class VSRunner {
         } catch (err) {
             return this.chromeBin;
         }
-        
+
         const dir = path.parse(src);
         const segments = this.chromeBin.split(path.sep);
         const newSegments = dest.split(path.sep);
-        
+
         let found = false;
         for (let i = 0; i < segments.length; i++) {
             if (!found) {

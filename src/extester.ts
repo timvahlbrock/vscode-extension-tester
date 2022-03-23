@@ -1,15 +1,15 @@
 'use strict';
 
-import { CodeUtil, DEFAULT_RUN_OPTIONS, ReleaseQuality, RunOptions } from './util/codeUtil';
-import { DriverUtil } from './util/driverUtil';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { URL } from 'url';
+import { CodeUtil, DEFAULT_RUN_OPTIONS, ReleaseQuality, RunOptions } from './util/codeUtil';
+import { DriverUtil } from './util/driverUtil';
 
-export { ReleaseQuality }
 export { MochaOptions } from 'mocha';
-export * from './browser';
 export * from 'monaco-page-objects';
+export * from './browser';
+export { ReleaseQuality };
 
 export interface SetupOptions {
     /** version of VSCode to test against, defaults to latest */
@@ -32,8 +32,8 @@ export class ExTester {
     private code: CodeUtil;
     private chrome: DriverUtil;
 
-    constructor(storageFolder: string = 'test-resources', releaseType: ReleaseQuality = ReleaseQuality.Stable, extensionsDir?: string) {
-        this.code = new CodeUtil(storageFolder, releaseType, extensionsDir);
+    constructor(storageFolder: string = 'test-resources', releaseType: ReleaseQuality = ReleaseQuality.Stable, extensionsDir?: string, extensionDevPath?: string) {
+        this.code = new CodeUtil(storageFolder, releaseType, extensionsDir, extensionDevPath);
         this.chrome = new DriverUtil(storageFolder);
     }
 
@@ -117,12 +117,12 @@ export class ExTester {
 
     /**
      * Performs requirements setup and runs extension tests
-     * 
+     *
      * @param testFilesPattern glob pattern for test files to run
      * @param vscodeVersion version of VSCode to test against, defaults to latest
      * @param setupOptions Additional options for setting up the tests
      * @param runOptions Additional options for running the tests
-     * 
+     *
      * @returns Promise resolving to the mocha process exit code - 0 for no failures, 1 otherwise
      */
     async setupAndRunTests(testFilesPattern: string, vscodeVersion: string = 'latest', setupOptions: Omit<SetupOptions, "vscodeVersion"> = DEFAULT_SETUP_OPTIONS, runOptions: Omit<RunOptions, "vscodeVersion"> = DEFAULT_RUN_OPTIONS): Promise<number> {
@@ -134,7 +134,7 @@ export class ExTester {
      * Runs the selected test files in VS Code using mocha and webdriver
      * @param testFilesPattern glob pattern for selected test files
      * @param runOptions Additional options for running the tests
-     * 
+     *
      * @returns Promise resolving to the mocha process exit code - 0 for no failures, 1 otherwise
      */
     async runTests(testFilesPattern: string, runOptions: RunOptions = DEFAULT_RUN_OPTIONS): Promise<number> {

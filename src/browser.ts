@@ -1,18 +1,19 @@
 'use strict';
 
-import * as path from 'path';
 import * as fs from 'fs-extra';
-import compareVersions = require('compare-versions');
-import { WebDriver, Builder, until, By, initPageObjects, logging } from 'monaco-page-objects';
+import { Builder, By, initPageObjects, logging, until, WebDriver } from 'monaco-page-objects';
+import * as path from 'path';
 import { Options } from 'selenium-webdriver/chrome';
 import { getLocatorsPath } from 'vscode-extension-tester-locators';
 import { CodeUtil, ReleaseQuality } from './util/codeUtil';
+import compareVersions = require('compare-versions');
 
 export class VSBrowser {
     static readonly baseVersion = '1.37.0';
     static readonly browserName = 'vscode';
     private storagePath: string;
     private extensionsFolder: string | undefined;
+    private extensionDevelopmentPath: string | undefined;
     private customSettings: Object;
     private _driver!: WebDriver;
     private codeVersion: string;
@@ -23,6 +24,7 @@ export class VSBrowser {
     constructor(codeVersion: string, releaseType: ReleaseQuality, customSettings: Object = {}, logLevel: logging.Level = logging.Level.INFO) {
         this.storagePath = process.env.TEST_RESOURCES ? process.env.TEST_RESOURCES : path.resolve('test-resources');
         this.extensionsFolder = process.env.EXTENSIONS_FOLDER ? process.env.EXTENSIONS_FOLDER : undefined;
+        this.extensionDevelopmentPath = process.env.EXTENSION_DEV_PATH ? process.env.EXTENSION_DEV_PATH : undefined;
         this.customSettings = customSettings;
         this.codeVersion = codeVersion;
         this.releaseType = releaseType;
@@ -41,7 +43,7 @@ export class VSBrowser {
         if (fs.existsSync(userSettings)) {
             fs.removeSync(path.join(this.storagePath, 'settings'));
         }
-        let defaultSettings = { 
+        let defaultSettings = {
             "window.titleBarStyle": "custom",
             "workbench.editor.enablePreview": false,
             "window.restoreFullscreen": true,
@@ -59,7 +61,7 @@ export class VSBrowser {
         await fs.remove(path.join(this.storagePath, 'screenshots'));
         fs.writeJSONSync(path.join(userSettings, 'settings.json'), defaultSettings);
         console.log(`Writing code settings to ${path.join(userSettings, 'settings.json')}`);
-        
+
         const args = ['--no-sandbox', '--disable-dev-shm-usage', `--user-data-dir=${path.join(this.storagePath, 'settings')}`];
 
         if (this.extensionsFolder) {
@@ -71,6 +73,8 @@ export class VSBrowser {
                 fs.copyFileSync(path.resolve(__dirname, '..', '..', 'resources', 'state.vscdb'), path.join(userSettings, 'globalStorage', 'state.vscdb'));
             }
             args.push(`--extensionDevelopmentPath=${process.cwd()}`);
+        } else if(this.extensionDevelopmentPath) {
+            args.push(`--extensionDevelopmentPath=${this.extensionDevelopmentPath}`);
         }
 
         let options = new Options().setChromeBinaryPath(codePath).addArguments(...args) as any;
@@ -149,12 +153,12 @@ export class VSBrowser {
 
     /**
      * Open folder(s) or file(s) in the current instance of vscode.
-     * 
+     *
      * @param paths path(s) of folder(s)/files(s) to open as varargs
      * @returns Promise resolving when all selected resources are opened and the workbench reloads
      */
     async openResources(...paths: string[]): Promise<void> {
-        const code = new CodeUtil(this.storagePath, this.releaseType, this.extensionsFolder);
+        const code = new CodeUtil(this.storagePath, this.releaseType, this.extensionsFolder, this.extensionDevelopmentPath);
         code.open(...paths);
         await new Promise(res => setTimeout(res, 1000));
         await this.waitForWorkbench();

@@ -82,10 +82,11 @@ program.command('run-tests <testFiles>')
     .option('-m, --mocha_config <mocharc.js>', 'Path to Mocha configuration file')
     .option('-l, --log_level <level>', 'Log messages from webdriver with a given level', 'Info')
     .option('-f, --offline', 'Attempt to run without internet connection, make sure to have all requirements downloaded', false)
+    .option('-d, --extension_development_path <extension development directory>', 'VSCode will use the unpackaged extension source from this directory')
     .action(withErrors(async (testFiles, cmd) => {
-        const extest = new ExTester(cmd.storage, codeStream(cmd.type), cmd.extensions_dir);
+        const extest = new ExTester(cmd.storage, codeStream(cmd.type), cmd.extensions_dir, cmd.extension_development_path);
         const vscodeVersion = loadCodeVersion(cmd.code_version);
-        await extest.runTests(testFiles, {vscodeVersion, settings: cmd.code_settings, cleanup: cmd.uninstall_extension, config: cmd.mocha_config, logLevel: cmd.log_level, offline: cmd.offline});
+        await extest.runTests(testFiles, {vscodeVersion, settings: cmd.code_settings, cleanup: cmd.uninstall_extension, config: cmd.mocha_config, logLevel: cmd.log_level, offline: cmd.offline });
     }));
 
 program.command('setup-and-run <testFiles>')
@@ -129,7 +130,7 @@ function withErrors(command: (...args: any[]) => Promise<void>) {
             }
             process.exitCode = 1;
         }
-    }    
+    }
 }
 
 function codeStream(stream: string) {
