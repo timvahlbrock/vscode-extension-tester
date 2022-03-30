@@ -3,6 +3,7 @@
 import * as fs from 'fs-extra';
 import { Builder, By, initPageObjects, logging, until, WebDriver } from 'monaco-page-objects';
 import * as path from 'path';
+import { join } from 'path';
 import { Options } from 'selenium-webdriver/chrome';
 import { getLocatorsPath } from 'vscode-extension-tester-locators';
 import { CodeUtil, ReleaseQuality } from './util/codeUtil';
@@ -74,6 +75,9 @@ export class VSBrowser {
             }
             args.push(`--extensionDevelopmentPath=${process.cwd()}`);
         } else if(this.extensionDevelopmentPath) {
+            args.unshift(join(__dirname, "convertArgs.js"), codePath);
+            codePath = process.argv[0];
+
             args.push(`--extensionDevelopmentPath=${this.extensionDevelopmentPath}`);
         }
 
